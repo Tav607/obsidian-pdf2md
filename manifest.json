@@ -1,0 +1,11 @@
+{
+	"id": "pdf2md-with-gemini",
+	"name": "PDF2MD with Gemini",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Convert PDF files to Markdown using Google Gemini API.",
+	"author": "Tav607",
+	"authorUrl": "https://obsidian.md",
+	"fundingUrl": "https://obsidian.md/pricing",
+	"isDesktopOnly": false
+}
