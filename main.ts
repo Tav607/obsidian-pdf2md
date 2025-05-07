@@ -13,34 +13,16 @@ interface PDF2MDSettings {
 
 const DEFAULT_SETTINGS: PDF2MDSettings = {
 	apiKey: 'your_api_key',
-	modelName: 'gemini-2.5',
-	systemPrompt: `You are an AI assistant specialized in converting PDF documents into clean, well-formatted Markdown text. Your goal is to accurately represent the structure and content of the provided PDF, adhering strictly to the following guidelines:
-- Format Preservation: Properly convert and represent headings (using #, ##, ###, etc.), ordered lists (1., 2.), unordered lists (* or -), tables (using standard Markdown table syntax), and blockquotes (>). Maintain the original document structure as closely as possible.
-- For images that are actually tables, output as Markdown tables; for images that are not tables, just semantically describe them without embedding.
-- Content Exclusion: Explicitly EXCLUDE any headers, footers, page numbers, or other peripheral metadata present in the original PDF. Focus solely on the main body content.
-- Output Format: The output MUST be only the raw Markdown text. Do NOT include any introductory phrases, explanations, summaries, concluding remarks, or surround the output with Markdown code fences. The response should begin directly with the first line of the converted Markdown content and end with the last line, with no extra formatting or text.`,
+	modelName: 'gemini-2.5-pro-preview-05-06',
+	systemPrompt: 'You are an AI assistant specialized in converting PDF documents into clean, well-formatted Markdown text. Your goal is to accurately represent the structure and content of the provided PDF, adhering strictly to the following guidelines:\n\n - Format Preservation: Properly convert and represent headings (using #, ##, ###, etc.), ordered lists (1., 2.), unordered lists (* or -), tables (using standard Markdown table syntax), and blockquotes (>). Maintain the original document structure as closely as possible.\n- For images that are actually tables, output as Markdown tables; for images that are not tables, just semantically describe them without embedding.\n- Content Exclusion: Explicitly EXCLUDE any headers, footers, page numbers, or other peripheral metadata present in the original PDF. Focus solely on the main body content.\n- Output Format: The output MUST be only the raw Markdown text. Do NOT include any introductory phrases, explanations, summaries, concluding remarks, or surround the output with Markdown code fences. The response should begin directly with the first line of the converted Markdown content and end with the last line, with no extra formatting or text.',
 	userPrompt: 'Please convert the uploaded PDF document into raw Markdown format, strictly following the conversion rules defined in the system prompt.',
-	temperature: 0.5,
+	temperature: 0.4,
 };
 
 export default class PDF2MDWithGemini extends Plugin {
 	settings: PDF2MDSettings;
 
 	async onload() {
-		// Inject CSS to set a fixed width of 400px for all setting controls
-		const style = document.createElement('style');
-		style.textContent = `
-			.setting-item-control {
-				flex: 0 0 400px !important;
-				max-width: 400px !important;
-			}
-			.setting-item-control input,
-			.setting-item-control textarea {
-				width: 100% !important;
-				resize: none !important;
-			}
-		`;
-		document.head.appendChild(style);
 		await this.loadSettings();
 		// Add context menu item for PDF files
 		this.app.workspace.on('file-menu', (menu: Menu, file: TFile) => {
@@ -200,6 +182,7 @@ class PDF2MDSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: PDF2MDWithGemini) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.containerEl.classList.add('pdf2md-settings');
 	}
 
 	display(): void {

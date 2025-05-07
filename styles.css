@@ -6,3 +6,13 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.pdf2md-settings .setting-item-control {
+  flex: 0 0 400px !important;
+  max-width: 400px !important;
+}
+.pdf2md-settings .setting-item-control input,
+.pdf2md-settings .setting-item-control textarea {
+  width: 100% !important;
+  resize: none !important;
+}
