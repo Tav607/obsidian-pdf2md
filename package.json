@@ -1,6 +1,6 @@
 {
 	"name": "pdf2md-with-gemini",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "This is a plugin for Obsidian that converts PDF documents to Markdown using Gemini.",
 	"main": "main.js",
 	"scripts": {

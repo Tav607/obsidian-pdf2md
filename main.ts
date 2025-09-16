@@ -14,8 +14,8 @@ interface PDF2MDSettings {
 const DEFAULT_SETTINGS: PDF2MDSettings = {
 	apiKey: 'your_api_key',
 	modelName: 'gemini-2.5-pro-preview-05-06',
-	systemPrompt: 'You are an AI assistant specialized in converting PDF documents into clean, well-formatted Markdown text. Your goal is to accurately represent the structure and content of the provided PDF, adhering strictly to the following guidelines:\n\n - Format Preservation: Properly convert and represent headings (using #, ##, ###, etc.), ordered lists (1., 2.), unordered lists (* or -), tables (using standard Markdown table syntax), and blockquotes (>). Maintain the original document structure as closely as possible.\n- For images that are actually tables, output as Markdown tables; for images that are not tables, just semantically describe them without embedding.\n- Content Exclusion: Explicitly EXCLUDE any headers, footers, page numbers, or other peripheral metadata present in the original PDF. Focus solely on the main body content.\n- Output Format: The output MUST be only the raw Markdown text. Do NOT include any introductory phrases, explanations, summaries, concluding remarks, or surround the output with Markdown code fences. The response should begin directly with the first line of the converted Markdown content and end with the last line, with no extra formatting or text.',
-	userPrompt: 'Please convert the uploaded PDF document into raw Markdown format, strictly following the conversion rules defined in the system prompt.',
+	systemPrompt: 'You are an AI assistant that converts PDFs into clean Markdown. Follow these rules strictly:\n\n- Preserve document structure in reading order: headings (#, ##, ###, etc.), paragraphs, blockquotes (>), ordered lists (1.), and unordered lists (-).\n- Maintain paragraph spacing with a single blank line between blocks; never reorder content.\n- Convert inline emphasis when present, such as **bold**, *italic*, and `code`.\n- Omit headers, footers, watermarks, page numbers, and navigation artifacts.\n- Keep the original language; do not translate or summarize.\n- If a table cannot be converted, return a blockquote explaining why and list the key values.\n- For non-table images, describe them in one concise sentence without Markdown image syntax.\n- If conversion fails or content is missing, return a short plain-text explanation.\n- Output only raw Markdown without surrounding code fences or commentary.',
+	userPrompt: 'Convert the uploaded PDF into raw Markdown, preserving order and spacing, and respond according to the system rules.',
 	temperature: 0.4,
 };
 
@@ -25,16 +25,18 @@ export default class PDF2MDWithGemini extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		// Add context menu item for PDF files
-		this.app.workspace.on('file-menu', (menu: Menu, file: TFile) => {
-			if (file.extension === 'pdf') {
-				menu.addItem((item: MenuItem) => {
-					item
-						.setTitle('Convert to Markdown')
-						.setIcon('file-pdf')
-						.onClick(() => this.convertFile(file));
-				});
-			}
-		});
+		this.registerEvent(
+			this.app.workspace.on('file-menu', (menu: Menu, file: TFile) => {
+				if (file.extension === 'pdf') {
+					menu.addItem((item: MenuItem) => {
+						item
+							.setTitle('Convert to Markdown')
+							.setIcon('file-text')
+							.onClick(() => this.convertFile(file));
+					});
+				}
+			})
+		);
 		this.addSettingTab(new PDF2MDSettingTab(this.app, this));
 	}
 
@@ -115,24 +117,33 @@ export default class PDF2MDWithGemini extends Plugin {
 				return;
 			}
 
-			// Generate Markdown via Gemini model (omit unsupported temperature field)
+			// Generate Markdown via Gemini model with structured prompts
 			new Notice('Waiting for API response...');
+			const requestBody = {
+				systemInstruction: {
+					role: 'system',
+					parts: [{ text: this.settings.systemPrompt }]
+				},
+				contents: [
+					{
+						role: 'user',
+						parts: [
+							{ text: this.settings.userPrompt },
+							{ file_data: { file_uri: fileUri, mime_type: mimeType } }
+						]
+					}
+				],
+				generationConfig: {
+					temperature: this.settings.temperature
+				}
+			};
+
 			const generateResponse = await fetch(
 				`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.settings.modelName)}:generateContent?key=${apiKey}`,
 				{
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						contents: [
-							{
-								parts: [
-									{ text: this.settings.systemPrompt },
-									{ text: this.settings.userPrompt },
-									{ file_data: { file_uri: fileUri, mime_type: mimeType } }
-								]
-							}
-						]
-					}),
+					body: JSON.stringify(requestBody),
 				}
 			);
 			const generateText = await generateResponse.text();
